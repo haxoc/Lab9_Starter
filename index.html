@@ -84,10 +84,61 @@
       <button>End Timer</button>
       <button>Console Trace</button>
       <button>Trigger a Global Error</button>
+      <button>Custom Error</button>
     </section>
   </main>
-
+  <script src="https://cdn.trackjs.com/agent/v3/latest/t.js"></script>
   <script>
+    window.TrackJS && TrackJS.install({
+      token: "7cd3f990791e4646a25cb6e2b88ec40f"
+      // for more configuration options, see https://docs.trackjs.com
+    });
+  </script>
+  <script>
+    window.onerror = function (event, source, lineno, colno, error) {
+      let error_arr = {};
+      error_arr.event = event;
+      if (source) {
+        error_arr.source = source;
+      }
+      if (lineno) {
+        error_arr.line = lineno;
+      }
+      if (colno) {
+        error_arr.column = colno;
+      }
+      if (error) {
+        error_arr.error = error;
+      }
+      fetch('https://httpbin.org/post', {
+        method: 'post',
+        headers: {
+          accept: 'application/json'
+        },
+        body: JSON.stringify(error_arr)
+      });
+      console.log(JSON.stringify(error_arr));
+    }
+
+    class RecipeNotFoundError extends Error {
+      constructor(message) {
+        super(message);
+        this.name = "RecipeNotFoundError";
+      }
+    }
+
+    recipes = { 'Cheese sandwich': ['CS recipe1', 'CS recipe2'], 'Chicken buritto': ['CB recipe42'], 'Pizza': ['Extra sauce pizza', 'Pineapple pizza'], 'Falafel': ['With tahini'], 'Taco': ['default', 'fish taco'] };
+
+    function get_recipes(recipe_name) {
+      let recipes_retrieved = recipes[recipe_name];
+      if (!recipes[recipe_name]) {
+        throw new RecipeNotFoundError(`Recipe ${recipe_name} was not found`);
+      }
+
+      return recipes_retrieved;
+    }
+
+
     let form = document.querySelector('form');
     form.addEventListener('submit', e => {
       e.preventDefault();
@@ -95,12 +146,39 @@
       let firstNum = document.querySelector('#first-num').value;
       let secondNum = document.querySelector('#second-num').value;
       let operator = document.querySelector('#operator').value;
-      output.innerHTML = eval(`${firstNum} ${operator} ${secondNum}`);
+      try {
+        output.innerHTML = eval(`${firstNum} ${operator} ${secondNum}`);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        console.log('done');
+      }
     });
 
     let errorBtns = Array.from(document.querySelectorAll('#error-btns > button'));
 
     // Start your code here
+    errorBtns[0].addEventListener('click', () => console.log('console.log'));
+    errorBtns[1].addEventListener('click', () => console.error('An error has occured'));
+    errorBtns[2].addEventListener('click', () => { for (let i = 0; i < 5; i++) { console.count('word') } });
+    errorBtns[3].addEventListener('click', () => console.warn('warning!'));
+    errorBtns[4].addEventListener('click', () => console.assert(2 > 6, '2 is less than 6'));
+    errorBtns[5].addEventListener('click', () => console.clear());
+    errorBtns[6].addEventListener('click', () => console.dir(form));
+    errorBtns[7].addEventListener('click', () => console.dirxml(form));
+    errorBtns[8].addEventListener('click', () => {
+      console.group('Recipes');
+      console.info('Turkey');
+      console.info('Salad');
+      console.info('Sandwich');
+    });
+    errorBtns[9].addEventListener('click', () => console.groupEnd('Recipes'));
+    errorBtns[10].addEventListener('click', () => console.table([{ name: 'turkey salad', time: '35 minutes' }, { name: 'Cheese Sandwich', time: '15 minutes' }]));
+    errorBtns[11].addEventListener('click', () => console.time());
+    errorBtns[12].addEventListener('click', () => console.timeEnd());
+    errorBtns[13].addEventListener('click', () => console.trace());
+    errorBtns[14].addEventListener('click', () => TrackJS.track('Logged external error!'));
+    errorBtns[15].addEventListener('click', () => { get_recipes('Tuna sandwich') });
     // You may move this JS to another file if you wish
   </script>
 </body>
